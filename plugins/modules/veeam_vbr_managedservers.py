@@ -65,6 +65,7 @@ def run_module():
         state=dict(type="str", choices=("absent", "present"), default="present"),
         name=dict(type='str', required=True),
         servertype=dict(type='str', chuies=("ViHost", "WindowsHost"), required=True),
+        certificateThumprint=dict(type='str', required=True),
         credentials_id=dict(type='str', required=True)
     )
 
@@ -87,6 +88,7 @@ def run_module():
     )
 
     # General
+    apiversion = '1.0-rev1'
     state = module.params['state']
 
     # Authenticate
@@ -97,7 +99,7 @@ def run_module():
     payload = 'grant_type=password&username=' + request_username + '&password=' + request_password
     headers = {
         'accept': 'application/json',
-        'x-api-version': '1.0-rev1',
+        'x-api-version': apiversion,
         'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': 'true'
     }
@@ -119,16 +121,18 @@ def run_module():
     if state == 'present':
         name = module.params['name']
         servertype = module.params['servertype']
+        certificateThumprint = module.params['certificateThumprint']
         credentialsId = module.params['credentials_id']
 
         body = {
             'name': name,
             'type': servertype,
+            'certificateThumprint': certificateThumprint,
             'credentialsId': credentialsId
         }
         bodyjson = json.dumps(body)
         headers = {
-            'x-api-version': '1.0-rev1',
+            'x-api-version': apiversion,
             'Authorization': 'Bearer ' + resp['access_token'],
             'Content-Type': 'application/json'
         }
@@ -138,7 +142,7 @@ def run_module():
         req, info = fetch_url(module, request_url, headers=headers, method=method, data=bodyjson)
 
         if info['status'] != 200:
-            module.fail_json(msg="Fail: %s" % ("Status: " + str(info['status']) + ", Message: " + str(info['msg'])))
+            module.fail_json(msg="Fail: %s" % ("Status: " + str(info['status']) + ", Message: " + str(info['body'])))
 
         try:
             result['msg'] = json.loads(req.read())
